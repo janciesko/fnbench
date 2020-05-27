@@ -1,5 +1,14 @@
 #include <stdio.h>
 
+#include <sys/time.h>
+#include <stdint.h>
+
+static double get_time() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return tv.tv_sec + (double) tv.tv_usec * 1e-6;
+}
+
 #if defined(__i386__)
 
 static __inline__ unsigned long long rdtsc(void)
@@ -73,14 +82,25 @@ static __inline__ unsigned long long rdtsc(void)
 #endif
 extern void noop();
 
+
+void __attribute__ ((noinline)) empty_func() {
+    asm volatile("":::);
+}
+
+#define iters 1e9
+
 int
 main(void)
 {
 	unsigned long long start, finish;
 	int i = 0;
+  double t = get_time();
+
 	start = rdtsc();
-	for(i = 0; i < 1*1000*1000*1000; i++)
-		noop();
+	for(i = 0; i < iters; i++)
+		/*noop();*/
+    empty_func();
 	finish = rdtsc();
-	printf("%llu\n", finish-start);
+  double t2 = get_time();
+	printf("%llu, %f, %f\n", (finish-start), (finish-start) / iters,  (t2 - t) / iters * 1.0e9);
 }
